@@ -12,6 +12,16 @@ import UIKit
 import Social
 import RNShareMenu
 
+extension Collection where Iterator.Element == [String:String] {
+    func toJSONString(options: JSONSerialization.WritingOptions = .prettyPrinted) -> String {
+        if let arr = self as? [[String:String]],
+            let dat = try? JSONSerialization.data(withJSONObject: arr, options: options),
+            let str = String(data: dat, encoding: String.Encoding.utf8) {
+            return str
+        }
+        return "[]"
+    }
+}
 class ShareViewController: SLComposeServiceViewController {
   var hostAppId: String?
   var hostAppUrlScheme: String?
@@ -50,6 +60,11 @@ class ShareViewController: SLComposeServiceViewController {
 
     override func configurationItems() -> [Any]! {
         // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
+      guard let item = extensionContext?.inputItems.first as? NSExtensionItem else {
+        cancelRequest()
+        return []
+      }
+      handlePost(item)
         return []
     }
 
@@ -260,7 +275,8 @@ class ShareViewController: SLComposeServiceViewController {
         self.exit(withError: NO_APP_GROUP_ERROR)
         return
       }
-      userDefaults.set(items,
+      let jsonString = items!.toJSONString()
+      userDefaults.set(jsonString,
                        forKey: USER_DEFAULTS_KEY)
       userDefaults.synchronize()
       self.openHostApp()
@@ -275,7 +291,6 @@ class ShareViewController: SLComposeServiceViewController {
     let url = URL(string: urlScheme)
     let selectorOpenURL = sel_registerName("openURL:")
     var responder: UIResponder? = self
-    
     while responder != nil {
       if responder?.responds(to: selectorOpenURL) == true {
         responder?.perform(selectorOpenURL, with: url)

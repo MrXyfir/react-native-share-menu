@@ -10,7 +10,6 @@
 import RNShareMenu
 
 class ReactShareViewController: ShareViewController, RCTBridgeDelegate, ReactShareViewDelegate {
-  var moduleRegistryAdapter: UMModuleRegistryAdapter!
   
   func sourceURL(for bridge: RCTBridge!) -> URL! {
 #if DEBUG
@@ -49,15 +48,6 @@ class ReactShareViewController: ShareViewController, RCTBridgeDelegate, ReactSha
 
     ShareMenuReactView.attachViewDelegate(self)
   }
-  #if SUPPORT_UNIMODULES
-  func extraModules(for bridge: RCTBridge!) -> [RCTBridgeModule]! {
-    if(self.moduleRegistryAdapter == nil) {
-      self.moduleRegistryAdapter = UMModuleRegistryAdapter(moduleRegistryProvider: UMModuleRegistryProvider())
-    }
-    let extraModules = self.moduleRegistryAdapter.extraModules(for: bridge)
-    return extraModules
-  }
-  #endif
   override func viewDidDisappear(_ animated: Bool) {
     cancel()
     ShareMenuReactView.detachViewDelegate()
