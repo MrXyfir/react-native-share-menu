@@ -9,7 +9,7 @@ class ShareMenu: RCTEventEmitter {
         }
     }
 
-    var sharedData: [String:String]?
+    var sharedData: [[String:String]]?
 
     static var initialShare: (UIApplication, URL, [UIApplication.OpenURLOptionsKey : Any])?
 
@@ -91,38 +91,39 @@ class ShareMenu: RCTEventEmitter {
 
         let extraData = userDefaults.object(forKey: USER_DEFAULTS_EXTRA_DATA_KEY) as? [String:Any]
 
-        if let data = userDefaults.object(forKey: USER_DEFAULTS_KEY) as? [String:String] {
+        if let data = userDefaults.object(forKey: USER_DEFAULTS_KEY) as? [[String:String]] {
             sharedData = data
-            dispatchEvent(with: data, and: extraData)
+            dispatchEvent(with: sharedData!, and: extraData)
             userDefaults.removeObject(forKey: USER_DEFAULTS_KEY)
         }
     }
 
     @objc(getSharedText:)
     func getSharedText(callback: RCTResponseSenderBlock) {
-        guard var data: [String:Any] = sharedData else {
+        guard var data: [[String:String]] = sharedData else {
             callback([])
             return
         }
 
         if let bundleId = Bundle.main.bundleIdentifier, let userDefaults = UserDefaults(suiteName: "group.\(bundleId)") {
-            data[EXTRA_DATA_KEY] = userDefaults.object(forKey: USER_DEFAULTS_EXTRA_DATA_KEY) as? [String:Any]
+            if let tmp = userDefaults.object(forKey: USER_DEFAULTS_EXTRA_DATA_KEY) as? [String:String] {
+                data.append( tmp)
+            }
         } else {
             print("Error: \(NO_APP_GROUP_ERROR)")
         }
 
-        callback([data as Any])
+        callback(data)
         sharedData = nil
     }
     
-    func dispatchEvent(with data: [String:String], and extraData: [String:Any]?) {
+    func dispatchEvent(with data: [[String:String]], and extraData: [String:Any]?) {
         guard hasListeners else { return }
 
-        var finalData = data as [String:Any]
+        var finalData = data as [[String:Any]]
         if (extraData != nil) {
-            finalData[EXTRA_DATA_KEY] = extraData
+            finalData.append(extraData!)
         }
-        
         sendEvent(withName: NEW_SHARE_EVENT, body: finalData)
     }
 }

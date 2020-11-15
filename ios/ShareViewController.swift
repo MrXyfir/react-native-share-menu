@@ -275,8 +275,7 @@ class ShareViewController: SLComposeServiceViewController {
         self.exit(withError: NO_APP_GROUP_ERROR)
         return
       }
-      let jsonString = items!.toJSONString()
-      userDefaults.set(jsonString,
+      userDefaults.set(items,
                        forKey: USER_DEFAULTS_KEY)
       userDefaults.synchronize()
       self.openHostApp()
@@ -287,9 +286,12 @@ class ShareViewController: SLComposeServiceViewController {
       exit(withError: NO_INFO_PLIST_URL_SCHEME_ERROR)
       return
     }
-    
-    let url = URL(string: urlScheme)
+    let jsonString = items!.toJSONString().addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+    let escapedString = "share?sharedData=\(jsonString ?? "[]")"
+    let urlString = urlScheme + escapedString
+    let url = URL(string: urlString)
     let selectorOpenURL = sel_registerName("openURL:")
+    print("url =\(url!)")
     var responder: UIResponder? = self
     while responder != nil {
       if responder?.responds(to: selectorOpenURL) == true {
