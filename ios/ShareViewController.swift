@@ -25,6 +25,7 @@ extension Collection where Iterator.Element == [String:String] {
 class ShareViewController: SLComposeServiceViewController {
   var hostAppId: String?
   var hostAppUrlScheme: String?
+  var shareDataStr:String?
   var items:[[String:String]]?
   var itemCount:Int = 0
   override func viewDidLoad() {
@@ -286,8 +287,8 @@ class ShareViewController: SLComposeServiceViewController {
       exit(withError: NO_INFO_PLIST_URL_SCHEME_ERROR)
       return
     }
-    let jsonString = items!.toJSONString().addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
-    let escapedString = "share?sharedData=\(jsonString ?? "[]")"
+    let jsonString = items!.toJSONString().data(using: .utf8)!.base64EncodedString()
+    let escapedString = "share?sharedData=\(jsonString)"
     let urlString = urlScheme + escapedString
     let url = URL(string: urlString)
     let selectorOpenURL = sel_registerName("openURL:")
