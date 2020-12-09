@@ -91,6 +91,30 @@ public class ShareMenuReactView: NSObject {
         }
     }
 
+    func saveAndOpen(url:URL) -> String? {
+      guard let hostAppId = Bundle.main.object(forInfoDictionaryKey: HOST_APP_IDENTIFIER_INFO_PLIST_KEY) as? String else {
+        return url.absoluteString
+      }
+      guard let groupFileManagerContainer = FileManager.default
+              .containerURL(forSecurityApplicationGroupIdentifier: "group.\(hostAppId)")
+      else {
+        return url.absoluteString
+      }
+      if let tmp  = NSData(contentsOf: url) {
+          let fileName = url.pathComponents.last ?? UUID().uuidString
+          let filePath = groupFileManagerContainer
+          .appendingPathComponent("\(fileName)")
+          do {
+            try tmp.write(to: filePath)
+            return filePath.absoluteString
+          }
+          catch (let error) {
+            print("Could not save image to \(filePath): \(error)")
+          }
+        }
+        return url.absoluteString
+    }
+    
     func extractDataFromContext(context: NSExtensionContext, withCallback callback: @escaping ([[String: String]], NSException?) -> Void) {
         let item:NSExtensionItem! = context.inputItems.first as? NSExtensionItem
         let attachments:[AnyObject]! = item.attachments
@@ -122,6 +146,9 @@ public class ShareMenuReactView: NSObject {
                 if let url = item as? URL {
                     content = url.absoluteString
                     mimeType = self.extractMimeType(from: url)
+                    if url.isFileURL {
+                        content = self.saveAndOpen(url:url)
+                    }
                 } else if let text = item as? String {
                     content = text
                     mimeType = "text/plain"

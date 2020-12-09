@@ -148,8 +148,12 @@ class ShareViewController: SLComposeServiceViewController {
         return
       }
       if let url = data as? URL {
-        self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
-        self.openAppIfDone()
+        if !url.isFileURL {
+          self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
+          self.openAppIfDone()
+        } else {
+          self.saveAndOpen(url:url)
+        }
         return
       }
       guard let image = data as? UIImage else {
@@ -190,10 +194,45 @@ class ShareViewController: SLComposeServiceViewController {
         return
       }
       if let url = data as? URL {
-        self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
-        self.openAppIfDone()
+        if url.isFileURL {
+          self.saveAndOpen(url:url)
+        } else {
+          self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
+          self.openAppIfDone()
+        }
       }
     }
+  }
+  func saveAndOpen(url:URL) {
+    guard let hostAppId = self.hostAppId else {
+      self.exit(withError: NO_INFO_PLIST_INDENTIFIER_ERROR)
+      return
+    }
+    guard let groupFileManagerContainer = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: "group.\(hostAppId)")
+    else {
+      self.exit(withError: NO_APP_GROUP_ERROR)
+      return
+    }
+    if let tmp  = NSData(contentsOf: url) {
+        let fileName = url.pathComponents.last ?? UUID().uuidString
+        let filePath = groupFileManagerContainer
+        .appendingPathComponent("\(fileName)")
+        do {
+          try tmp.write(to: filePath)
+          self.items!.append([DATA_KEY: filePath.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
+          self.openAppIfDone()
+        }
+        catch (let error) {
+          print("Could not save image to \(filePath): \(error)")
+          self.openAppIfDone()
+          return
+        }
+      } else {
+        self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
+        self.openAppIfDone()
+        return
+      }
   }
   func storeUrl(withProvider provider: NSItemProvider) {
     provider.loadItem(forTypeIdentifier: kUTTypeURL as String, options: nil) { (data, error) in
@@ -206,8 +245,12 @@ class ShareViewController: SLComposeServiceViewController {
         self.exit(withError: COULD_NOT_FIND_URL_ERROR)
         return
       }
-      self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
-      self.openAppIfDone()
+      if url.isFileURL {
+        self.saveAndOpen(url:url)
+      } else {
+        self.items!.append([DATA_KEY: url.absoluteString, MIME_TYPE_KEY: url.extractMimeType()])
+        self.openAppIfDone()
+      }
     }
   }
   
